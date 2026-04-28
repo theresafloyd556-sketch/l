@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大福猫 - 你的治愈系云宠物</title>
+    <style>
+        :root {
+            --cream: #fff8e1; /* 暖奶油主色 */
+            --white: #ffffff; /* 腹部/口鼻 */
+            --caramel: #e6be8a; /* 焦糖虎斑纹 */
+            --pink: #ffd1dc; /* 肉垫/耳内 */
+            --deep-blue: #1a237e; /* 星星眼 */
+            --text-color: #7d6e61;
+            --bg-gradient: linear-gradient(180deg, #fdfcfb 0%, #e2d1c3 100%);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-gradient);
+            font-family: 'ZCOOL KuaiLe', 'Microsoft YaHei', sans-serif;
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        .game-card {
+            width: 360px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(15px);
+            border-radius: 50px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.8);
+            position: relative;
+        }
+
+        /* --- 状态显示区 --- */
+        .stats {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .stat-label { font-size: 14px; font-weight: bold; width: 50px; }
+        .bar-outer {
+            flex: 1;
+            height: 10px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 5px;
+            margin: 0 10px;
+            overflow: hidden;
+        }
+        .bar-inner {
+            height: 100%;
+            width: 70%;
+            border-radius: 5px;
+            transition: width 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* --- 猫咪舞台区 --- */
+        .stage {
+            height: 260px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 独白气泡 */
+        .bubble {
+            position: absolute;
+            top: 0;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: 0.4s;
+            z-index: 10;
+        }
+        .bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            border-width: 6px 6px 0;
+            border-style: solid;
+            border-color: white transparent;
+            margin-left: -6px;
+        }
+
+        /* 猫咪主体：大福体型 */
+        .cat {
+            width: 180px;
+            height: 140px;
+            background: var(--cream);
+            border-radius: 100px 100px 70px 70px;
+            position: relative;
+            animation: breathe 4s infinite ease-in-out;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* 虎斑纹 */
+        .stripes {
+            position: absolute;
+            top: 15px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+        .stripe {
+            width: 20px;
+            height: 10px;
+            background: var(--caramel);
+            border-radius: 10px;
+            opacity: 0.5;
+        }
+
+        /* 腹部白色区域 */
+        .belly {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 60px;
+            background: var(--white);
+            border-radius: 60px 60px 30px 30px;
+        }
+
+        /* 耳朵：带动态旋转 */
+        .ear {
+            width: 45px;
+            height: 50px;
+            background: var(--cream);
+            position: absolute;
+            top: -15px;
+            border-radius: 50% 50% 10% 10%;
+            animation: ear-twitch 4s infinite ease-in-out;
+        }
+        .ear.left { left: 15px; transform: rotate(-20deg); transform-origin: bottom right; }
+        .ear.right { right: 15px; transform: rotate(20deg); transform-origin: bottom left; }
+        .ear-inner {
+            width: 25px;
+            height: 35px;
+            background: var(--pink);
+            border-radius: 50% 50% 10% 10%;
+            margin: 8px auto;
+            opacity: 0.7;
+        }
+
+        /* 脸部详情 */
+        .face {
+            position: absolute;
+            top: 50px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .eyes { display: flex; gap: 40px; margin-bottom: 5px; }
+        .eye {
+            width: 18px;
+            height: 22px;
+            background: var(--deep-blue);
+            border-radius: 50%;
+            position: relative;
+            transition: 0.3s;
+        }
+        .eye::after { /* 星星高光 */
+            content: '✦';
+            color: white;
+            font-size: 8px;
+            position: absolute;
+            top: 2px;
+            left: 4px;
+        }
+
+        .nose-area { display: flex; flex-direction: column; align-items: center; margin-top: -5px; }
+        .nose {
+            width: 8px;
+            height: 6px;
+            background: #ff8a80;
+            border-radius: 50% 50% 50% 50% / 20% 20% 80% 80%;
+        }
+        .whiskers {
+            position: absolute;
+            top: 70px;
+            width: 140%;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .whisker-side span {
+            display: block;
+            width: 30px;
+            height: 1px;
+            background: rgba(125, 110, 97, 0.2);
+            margin: 4px 0;
+        }
+
+        /* 爪子与粉肉垫 */
+        .paws {
+            position: absolute;
+            bottom: -5px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+        }
+        .paw {
+            width: 35px;
+            height: 25px;
+            background: var(--white);
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 4px;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.05);
+        }
+        .pad {
+            width: 15px;
+            height: 10px;
+            background: var(--pink);
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+
+        /* 尾巴：山丘曲线 */
+        .tail-container {
+            position: absolute;
+            left: -40px;
+            bottom: 20px;
+            z-index: -1;
+            transform-origin: right center;
+            animation: tail-wag 4s infinite ease-in-out;
+        }
+        .tail {
+            width: 60px;
+            height: 25px;
+            background: var(--caramel);
+            border-radius: 20px;
+            opacity: 0.8;
+        }
+
+        /* --- 动画关键帧 --- */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04, 0.96) translateY(2px); }
+        }
+        @keyframes ear-twitch {
+            0%, 45%, 55%, 100% { transform: rotate(var(--rot)); }
+            50% { transform: rotate(var(--rot-tw)); }
+        }
+        .left { --rot: -20deg; --rot-tw: -35deg; }
+        .right { --rot: 20deg; --rot-tw: 35deg; }
+
+        @keyframes tail-wag {
+            0%, 100% { transform: rotate(-10deg); }
+            50% { transform: rotate(15deg); }
+        }
+        @keyframes happy-jump {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-60px) scale(1.1); }
+        }
+
+        /* --- 状态反馈样式 --- */
+        /* 开心表情：月牙眼 */
+        .cat.happy .eye {
+            height: 5px;
+            background: transparent;
+            border-bottom: 4px solid var(--deep-blue);
+            border-radius: 0;
+            margin-top: 10px;
+        }
+        .cat.happy .eye::after { display: none; }
+        
+        /* 委屈/伤心：眼泪汪汪 + 耳朵耷拉 */
+        .cat.sad .eye::before {
+            content: '💧';
+            position: absolute;
+            bottom: -15px;
+            font-size: 12px;
+            animation: tear 2s infinite;
+        }
+        .cat.sad .ear { top: -5px; transform: rotate(var(--rot-sad)) !important; }
+        .cat.sad .ear.left { --rot-sad: -60deg; }
+        .cat.sad .ear.right { --rot-sad: 60deg; }
+
+        @keyframes tear { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(10px); } }
+
+        /* --- 控制按钮 --- */
+        .btns {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        button {
+            border: none;
+            padding: 12px 0;
+            border-radius: 18px;
+            background: var(--white);
+            color: var(--text-color);
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #d1c4b9;
+            transition: 0.1s;
+        }
+        button:active { transform: translateY(4px); box-shadow: 0 1px 0 #d1c4b9; }
+        button:hover { background: var(--cream); }
+
+    </style>
+</head>
+<body>
+
+<div class="game-card">
+    <div class="stats">
+        <div class="stat-item">
+            <span class="stat-label">饱食</span>
+            <div class="bar-outer"><div id="bar-satiety" class="bar-inner" style="background: #ffadad;"></div></div>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">快乐</span>
+            <div class="bar-outer"><div id="bar-happy" class="bar-inner" style="background: #ffd6a5;"></div></div>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">精力</span>
+            <div class="bar-outer"><div id="bar-energy" class="bar-inner" style="background: #9bf6ff;"></div></div>
+        </div>
+    </div>
+
+    <div class="stage">
+        <div id="bubble" class="bubble">喵呜~</div>
+        
+        <div id="cat" class="cat" onclick="petCat()">
+            <div class="stripes">
+                <div class="stripe"></div>
+                <div class="stripe"></div>
+            </div>
+            <div class="ear left"><div class="ear-inner"></div></div>
+            <div class="ear right"><div class="ear-inner"></div></div>
+            
+            <div class="belly"></div>
+            
+            <div class="face">
+                <div class="eyes">
+                    <div class="eye"></div>
+                    <div class="eye"></div>
+                </div>
+                <div class="nose-area">
+                    <div class="nose"></div>
+                </div>
+            </div>
+
+            <div class="whiskers">
+                <div class="whisker-side"><span></span><span></span><span></span></div>
+                <div class="whisker-side"><span></span><span></span><span></span></div>
+            </div>
+
+            <div class="paws">
+                <div class="paw"><div class="pad"></div></div>
+                <div class="paw"><div class="pad"></div></div>
+            </div>
+
+            <div class="tail-container">
+                <div class="tail"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="btns">
+        <button onclick="handleAction('feed')">喂罐罐</button>
+        <button onclick="handleAction('touch')">揉揉脸</button>
+        <button onclick="handleAction('play')">玩毛线</button>
+    </div>
+</div>
+
+<script>
+    const stats = {
+        satiety: 70,
+        happy: 70,
+        energy: 70
+    };
+
+    const cat = document.getElementById('cat');
+    const bubble = document.getElementById('bubble');
+
+    const quotes = {
+        high: ["我是全世界最幸福的大福！", "想在你的怀里打个盹~", "生活真美好喵！", "再陪我玩一会嘛~"],
+        normal: ["阳光暖暖的...", "今天吃小鱼干还是罐罐？", "你在看我吗？", "尾巴停不下来了~"],
+        low: ["肚子空荡荡的...", "好无聊哦，想拆家...", "没力气卖萌了...", "呜呜，想抱抱..."]
+    };
+
+    function updateUI() {
+        document.getElementById('bar-satiety').style.width = stats.satiety + '%';
+        document.getElementById('bar-happy').style.width = stats.happy + '%';
+        document.getElementById('bar-energy').style.width = stats.energy + '%';
+
+        // 表情判定
+        cat.classList.remove('happy', 'sad');
+        if (stats.satiety < 30 || stats.happy < 30 || stats.energy < 30) {
+            cat.classList.add('sad');
+        } else if (stats.satiety > 70 && stats.happy > 70) {
+            cat.classList.add('happy');
+        }
+    }
+
+    function handleAction(type) {
+        if (type === 'feed') {
+            stats.satiety = Math.min(100, stats.satiety + 15);
+            stats.energy = Math.max(0, stats.energy - 5);
+            stats.happy = Math.min(100, stats.happy + 5);
+            speak("吧唧吧唧，罐罐真香！");
+        } else if (type === 'touch') {
+            stats.happy = Math.min(100, stats.happy + 15);
+            stats.satiety = Math.max(0, stats.satiety - 5);
+            speak("呼噜呼噜...还要摸摸~");
+            // 向上蹭蹭的动作
+            cat.style.transform = "translateY(-10px) scale(1.05)";
+            setTimeout(() => cat.style.transform = "translateY(0) scale(1)", 300);
+        } else if (type === 'play') {
+            stats.happy = Math.min(100, stats.happy + 18);
+            stats.energy = Math.max(0, stats.energy - 15);
+            stats.satiety = Math.max(0, stats.satiety - 8);
+            speak("看我无影爪！嘿！");
+        }
+
+        // 检查是否蹦一下
+        if (stats.satiety >= 70 && stats.happy >= 70 && stats.energy >= 70) {
+            cat.style.animation = "happy-jump 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+            setTimeout(() => cat.style.animation = "breathe 4s infinite ease-in-out", 600);
+        }
+
+        updateUI();
+    }
+
+    function petCat() {
+        stats.happy = Math.min(100, stats.happy + 2);
+        speak("贴贴~");
+        updateUI();
+    }
+
+    function speak(text) {
+        bubble.innerText = text;
+        bubble.style.opacity = 1;
+        bubble.style.transform = 'translateY(-20px)';
+        setTimeout(() => {
+            bubble.style.opacity = 0;
+            bubble.style.transform = 'translateY(10px)';
+        }, 2500);
+    }
+
+    // 自动独白逻辑
+    function autoChat() {
+        let pool;
+        const avg = (stats.satiety + stats.happy + stats.energy) / 3;
+        if (avg > 80) pool = quotes.high;
+        else if (avg < 40) pool = quotes.low;
+        else pool = quotes.normal;
+
+        speak(pool[Math.floor(Math.random() * pool.length)]);
+        
+        // 状态低时频率增加
+        const delay = avg < 40 ? 15000 : 30000;
+        setTimeout(autoChat, delay);
+    }
+
+    // 数值随时间衰减
+    setInterval(() => {
+        stats.satiety = Math.max(0, stats.satiety - 1);
+        stats.happy = Math.max(0, stats.happy - 1);
+        stats.energy = Math.max(0, stats.energy - 0.5);
+        updateUI();
+    }, 4000);
+
+    // 初始化
+    updateUI();
+    setTimeout(autoChat, 5000);
+</script>
+
+</body>
+</html>
